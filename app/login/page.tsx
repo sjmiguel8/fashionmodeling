@@ -1,25 +1,32 @@
 "use client"
 
-import type React from "react"
-
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { loginUser } from "@/lib/firebase-service"
 
 export default function LoginPage() {
+  const router = useRouter()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [error, setError] = useState("")
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // In a real app, this would authenticate with Firebase
-    console.log("Login attempt with:", { email, password })
-
-    // For demo purposes, redirect to home
-    window.location.href = "/"
+    setError("")
+    
+    try {
+      const userCredential = await loginUser(email, password)
+      console.log("Login successful!", userCredential.user)
+      router.push("/") // Redirect to home page after successful login
+    } catch (error) {
+      console.error("Login failed:", error)
+      setError(error instanceof Error ? error.message : 'Failed to login')
+    }
   }
 
   return (
@@ -28,6 +35,7 @@ export default function LoginPage() {
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold">Login</CardTitle>
           <CardDescription>Enter your email and password to access your account</CardDescription>
+          {error && <p className="text-sm text-red-500">{error}</p>}
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

@@ -1,4 +1,4 @@
-import { initializeApp } from 'firebase/app';
+import { getApps, initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
@@ -11,6 +11,20 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
-const app = initializeApp(firebaseConfig);
+// Debug environment variables
+console.log('Firebase Config:', {
+  hasApiKey: !!firebaseConfig.apiKey,
+  hasAuthDomain: !!firebaseConfig.authDomain,
+  hasProjectId: !!firebaseConfig.projectId,
+  environment: process.env.NODE_ENV
+});
+
+let app;
+if (!getApps().length) {
+  app = initializeApp(firebaseConfig);
+} else {
+  app = getApps()[0];
+}
+
 export const auth = getAuth(app);
 export const db = getFirestore(app);
