@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { saveClothingItem } from "@/lib/firebase-service"
-import { searchClothes } from "@/lib/clothes-api"
+import { searchClothingItems } from "@/lib/search-service"
 import type { ClothingItem } from "@/lib/types"
 
 export default function SearchPage() {
@@ -18,20 +18,24 @@ export default function SearchPage() {
   const [userId, setUserId] = useState<string | null>(null)
 
   useEffect(() => {
-    // In a real app, this would come from your auth system
+    // Only set userId on initial load, remove default search
     setUserId("demo-user")
-
-    // Load initial items
-    handleSearch("")
   }, [])
 
   const handleSearch = async (query: string) => {
+    // Don't trigger search if query is empty
+    if (!query.trim()) {
+      setSearchResults([])
+      return
+    }
+
     setIsLoading(true)
     try {
-      const results = await searchClothes(query)
+      const results = await searchClothingItems(query)
       setSearchResults(results)
     } catch (error) {
       console.error("Error searching clothes:", error)
+      setSearchResults([])
     } finally {
       setIsLoading(false)
     }

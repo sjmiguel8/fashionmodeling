@@ -52,9 +52,14 @@ export async function logoutUser() {
 }
 
 export const getSavedItems = async (userId: string): Promise<ClothingItem[]> => {
-  // Implement your firebase logic here
-  // This is a placeholder implementation
-  return [];
+  try {
+    const savedItemsRef = collection(db, `users/${userId}/savedItems`);
+    const snapshot = await getDocs(savedItemsRef);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ClothingItem));
+  } catch (error) {
+    console.error('Error getting saved items:', error);
+    return [];
+  }
 };
 
 export const getClothingItem = async (itemId: string): Promise<ClothingItem | null> => {
@@ -64,9 +69,21 @@ export const getClothingItem = async (itemId: string): Promise<ClothingItem | nu
 };
 
 export const removeClothingItem = async (userId: string, itemId: string): Promise<void> => {
-  // Implement your firebase logic here
+  try {
+    const itemRef = doc(db, `users/${userId}/savedItems/${itemId}`);
+    await deleteDoc(itemRef);
+  } catch (error) {
+    console.error('Error removing item:', error);
+    throw error;
+  }
 };
 
 export const saveClothingItem = async (userId: string, item: ClothingItem): Promise<void> => {
-  // Implement your firebase logic here
+  try {
+    const itemRef = doc(db, `users/${userId}/savedItems/${item.id}`);
+    await setDoc(itemRef, item);
+  } catch (error) {
+    console.error('Error saving item:', error);
+    throw error;
+  }
 };
