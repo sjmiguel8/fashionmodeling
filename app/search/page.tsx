@@ -10,20 +10,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { saveClothingItem } from "@/lib/firebase-service"
 import { searchClothingItems } from "@/lib/search-service"
 import type { ClothingItem } from "@/lib/types"
+import { useAuth } from "@/contexts/auth-context"
+import { toast } from "@/components/ui/use-toast"
 
 export default function SearchPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [searchResults, setSearchResults] = useState<ClothingItem[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const [userId, setUserId] = useState<string | null>(null)
-
-  useEffect(() => {
-    // Only set userId on initial load, remove default search
-    setUserId("demo-user")
-  }, [])
+  const { user } = useAuth()
 
   const handleSearch = async (query: string) => {
-    // Don't trigger search if query is empty
     if (!query.trim()) {
       setSearchResults([])
       return
@@ -42,13 +38,28 @@ export default function SearchPage() {
   }
 
   const handleSaveItem = async (item: ClothingItem) => {
-    if (!userId) return
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to save items to your collection.",
+        variant: "destructive",
+      })
+      return
+    }
 
     try {
-      await saveClothingItem(userId, item)
-      alert(`${item.name} saved to your collection!`)
+      await saveClothingItem(user.uid, item)
+      toast({
+        title: "Item saved!",
+        description: `${item.name} has been saved to your collection.`,
+      })
     } catch (error) {
       console.error("Error saving item:", error)
+      toast({
+        title: "Error",
+        description: "Failed to save item. Please try again.",
+        variant: "destructive",
+      })
     }
   }
 
@@ -101,12 +112,28 @@ export default function SearchPage() {
               {searchResults.map((item) => (
                 <Card key={item.id} className="overflow-hidden">
                   <div className="aspect-[3/4] relative group">
-                    <img
-                      src={item.imageUrl || "/placeholder.svg"}
-                      alt={item.name}
-                      className="object-cover w-full h-full"
-                    />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <a 
+                      href={item.sourceUrl || item.imageUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="block w-full h-full"
+                    >
+                      <img
+                        src={item.imageUrl || "/placeholder.svg"}
+                        alt={item.name}
+                        className="object-cover w-full h-full cursor-pointer"
+                      />
+                    </a>
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                      <Button variant="secondary" size="sm" asChild>
+                        <a 
+                          href={item.sourceUrl || item.imageUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          View Source
+                        </a>
+                      </Button>
                       <Button variant="secondary" size="sm" asChild>
                         <Link href={`/mannequin?itemId=${item.id}`}>Try On</Link>
                       </Button>
@@ -118,8 +145,14 @@ export default function SearchPage() {
                   </CardContent>
                   <CardFooter className="p-4 pt-0 flex justify-between">
                     <span className="text-xs text-muted-foreground">{item.brand}</span>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleSaveItem(item)}>
-                      <Heart className="h-4 w-4" />
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className={`h-8 w-8 ${!user ? 'opacity-50 cursor-not-allowed' : ''}`} 
+                      onClick={() => handleSaveItem(item)}
+                      disabled={!user}
+                    >
+                      <Heart className={`h-4 w-4 ${user ? 'text-gray-600 hover:text-red-500' : 'text-gray-400'}`} />
                       <span className="sr-only">Save</span>
                     </Button>
                   </CardFooter>
@@ -135,12 +168,28 @@ export default function SearchPage() {
               .map((item) => (
                 <Card key={item.id} className="overflow-hidden">
                   <div className="aspect-[3/4] relative group">
-                    <img
-                      src={item.imageUrl || "/placeholder.svg"}
-                      alt={item.name}
-                      className="object-cover w-full h-full"
-                    />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <a 
+                      href={item.sourceUrl || item.imageUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="block w-full h-full"
+                    >
+                      <img
+                        src={item.imageUrl || "/placeholder.svg"}
+                        alt={item.name}
+                        className="object-cover w-full h-full cursor-pointer"
+                      />
+                    </a>
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                      <Button variant="secondary" size="sm" asChild>
+                        <a 
+                          href={item.sourceUrl || item.imageUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          View Source
+                        </a>
+                      </Button>
                       <Button variant="secondary" size="sm" asChild>
                         <Link href={`/mannequin?itemId=${item.id}`}>Try On</Link>
                       </Button>
@@ -152,8 +201,14 @@ export default function SearchPage() {
                   </CardContent>
                   <CardFooter className="p-4 pt-0 flex justify-between">
                     <span className="text-xs text-muted-foreground">{item.brand}</span>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleSaveItem(item)}>
-                      <Heart className="h-4 w-4" />
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className={`h-8 w-8 ${!user ? 'opacity-50 cursor-not-allowed' : ''}`} 
+                      onClick={() => handleSaveItem(item)}
+                      disabled={!user}
+                    >
+                      <Heart className={`h-4 w-4 ${user ? 'text-gray-600 hover:text-red-500' : 'text-gray-400'}`} />
                       <span className="sr-only">Save</span>
                     </Button>
                   </CardFooter>

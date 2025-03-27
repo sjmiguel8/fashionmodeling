@@ -40,6 +40,10 @@ export function Navbar() {
           )}
         </div>
       </div>
+      <div className="flex gap-4 sm:gap-6">
+        <Link href="/search">Search</Link>
+        <Link href="/saved">Saved Items</Link>
+      </div>
     </nav>
   )
 }

@@ -6,46 +6,73 @@ import { Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useAuth } from "@/contexts/auth-context"
 import { getSavedItems, removeClothingItem } from "@/lib/firebase-service"
+import { toast } from "@/components/ui/use-toast"
 import type { ClothingItem } from "@/lib/types"
 
 export default function SavedItemsPage() {
   const [savedItems, setSavedItems] = useState<ClothingItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [userId, setUserId] = useState<string | null>(null)
+  const { user } = useAuth()
 
   useEffect(() => {
-    // In a real app, this would come from your auth system
-    setUserId("demo-user")
-  }, [])
-
-  useEffect(() => {
-    if (!userId) return
+    if (!user) {
+      setSavedItems([])
+      setIsLoading(false)
+      return
+    }
 
     const loadSavedItems = async () => {
       setIsLoading(true)
       try {
-        const items = await getSavedItems(userId)
+        const items = await getSavedItems(user.uid)
         setSavedItems(items)
       } catch (error) {
         console.error("Error loading saved items:", error)
+        toast({
+          title: "Error",
+          description: "Failed to load saved items.",
+          variant: "destructive",
+        })
       } finally {
         setIsLoading(false)
       }
     }
 
     loadSavedItems()
-  }, [userId])
+  }, [user])
 
   const handleRemoveItem = async (itemId: string) => {
-    if (!userId) return
+    if (!user) return
 
     try {
-      await removeClothingItem(userId, itemId)
+      await removeClothingItem(user.uid, itemId)
       setSavedItems(savedItems.filter((item) => item.id !== itemId))
+      toast({
+        title: "Item removed",
+        description: "The item has been removed from your collection.",
+      })
     } catch (error) {
       console.error("Error removing item:", error)
+      toast({
+        title: "Error",
+        description: "Failed to remove item.",
+        variant: "destructive",
+      })
     }
+  }
+
+  if (!user) {
+    return (
+      <div className="container px-4 py-16 mx-auto text-center">
+        <h1 className="text-2xl font-bold mb-4">Sign In Required</h1>
+        <p className="text-muted-foreground mb-8">Please sign in to view your saved items.</p>
+        <Button asChild>
+          <Link href="/sign-in">Sign In</Link>
+        </Button>
+      </div>
+    )
   }
 
   return (
