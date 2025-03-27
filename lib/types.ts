@@ -7,6 +7,7 @@ export type ClothingItem = {
   price: number;
   category: 'tops' | 'bottoms' | 'dresses' | 'outerwear';
   source: 'google' | 'pinterest';
+  savedAt?: string;
 };
 
 export interface WebResult {

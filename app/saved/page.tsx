@@ -27,7 +27,13 @@ export default function SavedItemsPage() {
       setIsLoading(true)
       try {
         const items = await getSavedItems(user.uid)
-        setSavedItems(items)
+        // Sort items by most recently saved
+        const sortedItems = items.sort((a, b) => {
+          const dateA = a.savedAt ? new Date(a.savedAt).getTime() : 0
+          const dateB = b.savedAt ? new Date(b.savedAt).getTime() : 0
+          return dateB - dateA
+        })
+        setSavedItems(sortedItems)
       } catch (error) {
         console.error("Error loading saved items:", error)
         toast({
@@ -48,7 +54,7 @@ export default function SavedItemsPage() {
 
     try {
       await removeClothingItem(user.uid, itemId)
-      setSavedItems(savedItems.filter((item) => item.id !== itemId))
+      setSavedItems(prev => prev.filter(item => item.id !== itemId))
       toast({
         title: "Item removed",
         description: "The item has been removed from your collection.",
