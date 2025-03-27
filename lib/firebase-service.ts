@@ -50,3 +50,23 @@ export async function logoutUser() {
     throw error
   }
 }
+
+export const getSavedItems = async (userId: string): Promise<ClothingItem[]> => {
+  // Implement your firebase logic here
+  // This is a placeholder implementation
+  return [];
+};
+
+export const getClothingItem = async (itemId: string): Promise<ClothingItem | null> => {
+  // Implement your firebase logic here
+  // This is a placeholder implementation
+  return null;
+};
+
+export const removeClothingItem = async (userId: string, itemId: string): Promise<void> => {
+  // Implement your firebase logic here
+};
+
+export const saveClothingItem = async (userId: string, item: ClothingItem): Promise<void> => {
+  // Implement your firebase logic here
+};

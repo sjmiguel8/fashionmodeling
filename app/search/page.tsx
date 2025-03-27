@@ -41,7 +41,7 @@ export default function SearchPage() {
     if (!userId) return
 
     try {
-      await saveClothingItem(userId, item.id, item)
+      await saveClothingItem(userId, item)
       alert(`${item.name} saved to your collection!`)
     } catch (error) {
       console.error("Error saving item:", error)
