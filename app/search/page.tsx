@@ -113,7 +113,7 @@ export default function SearchPage() {
                 <Card key={item.id} className="overflow-hidden">
                   <div className="aspect-[3/4] relative group">
                     <a 
-                      href={item.sourceUrl || item.imageUrl} 
+                      href={item.source || item.imageUrl} 
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="block w-full h-full"
@@ -127,7 +127,7 @@ export default function SearchPage() {
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                       <Button variant="secondary" size="sm" asChild>
                         <a 
-                          href={item.sourceUrl || item.imageUrl}
+                          href={item.source || item.imageUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                         >
@@ -169,7 +169,7 @@ export default function SearchPage() {
                 <Card key={item.id} className="overflow-hidden">
                   <div className="aspect-[3/4] relative group">
                     <a 
-                      href={item.sourceUrl || item.imageUrl} 
+                      href={item.source || item.imageUrl} 
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="block w-full h-full"
@@ -183,7 +183,7 @@ export default function SearchPage() {
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                       <Button variant="secondary" size="sm" asChild>
                         <a 
-                          href={item.sourceUrl || item.imageUrl}
+                          href={item.source || item.imageUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                         >
