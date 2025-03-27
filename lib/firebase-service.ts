@@ -41,3 +41,12 @@ export async function loginUser(email: string, password: string) {
     throw error;
   }
 }
+
+export async function logoutUser() {
+  try {
+    await signOut(auth)
+  } catch (error) {
+    console.error('Logout error:', error)
+    throw error
+  }
+}
