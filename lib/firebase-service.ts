@@ -74,4 +74,16 @@ export async function getClothingItem(itemId: string): Promise<ClothingItem | nu
   if (snapshot.empty) return null;
   return snapshot.docs[0].data() as ClothingItem;
 }
+function useEffect(effect: () => void | Promise<void>, deps: any[]) {
+  // A simple implementation to mimic React's useEffect behavior
+  let hasRun = false;
+
+  if (!hasRun) {
+    hasRun = true;
+    const cleanup = effect();
+    if (cleanup instanceof Promise) {
+      cleanup.catch(err => console.error('Error in useEffect:', err));
+    }
+  }
+}
 
