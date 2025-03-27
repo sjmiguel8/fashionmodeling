@@ -78,10 +78,21 @@ export const removeClothingItem = async (userId: string, itemId: string): Promis
   }
 };
 
+function createSafeDocumentId(url: string): string {
+  // Remove invalid characters and encode the URL to make it Firebase-safe
+  return encodeURIComponent(url).replace(/[.#$/\[\]]/g, '_');
+}
+
 export const saveClothingItem = async (userId: string, item: ClothingItem): Promise<void> => {
   try {
-    const itemRef = doc(db, `users/${userId}/savedItems/${item.id}`);
-    await setDoc(itemRef, item);
+    // Create a safe document ID from the item's URL or ID
+    const safeId = createSafeDocumentId(item.id);
+    const itemRef = doc(db, `users/${userId}/savedItems/${safeId}`);
+    await setDoc(itemRef, {
+      ...item,
+      id: safeId, // Save the safe ID
+      savedAt: new Date().toISOString()
+    });
   } catch (error) {
     console.error('Error saving item:', error);
     throw error;

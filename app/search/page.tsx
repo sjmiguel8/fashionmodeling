@@ -63,6 +63,12 @@ export default function SearchPage() {
     }
   }
 
+  const handleImageError = (event: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    const img = event.target as HTMLImageElement;
+    img.src = '/placeholder.svg';
+    img.onerror = null; // Prevent infinite loop if placeholder also fails
+  };
+
   return (
     <div className="container px-4 py-8 mx-auto">
       <div className="flex flex-col items-start gap-4 md:flex-row md:justify-between md:items-center">
@@ -122,6 +128,7 @@ export default function SearchPage() {
                         src={item.imageUrl || "/placeholder.svg"}
                         alt={item.name}
                         className="object-cover w-full h-full cursor-pointer"
+                        onError={handleImageError}
                       />
                     </a>
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
@@ -178,6 +185,7 @@ export default function SearchPage() {
                         src={item.imageUrl || "/placeholder.svg"}
                         alt={item.name}
                         className="object-cover w-full h-full cursor-pointer"
+                        onError={handleImageError}
                       />
                     </a>
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">

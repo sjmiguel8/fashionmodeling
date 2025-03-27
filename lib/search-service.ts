@@ -45,9 +45,9 @@ async function searchGoogle(query: string): Promise<ClothingItem[]> {
     return items.map((item: any) => ({
       id: item.sourceUrl || item.link,
       name: item.title,
-      imageUrl: item.imageUrl || item.link, // Use the direct image URL
+      imageUrl: item.imageUrl || item.thumbnailUrl || '/placeholder.svg', // Fallback to thumbnail if main image fails
       thumbnailUrl: item.thumbnailUrl,
-      brand: new URL(item.sourceUrl || item.link).hostname.replace('www.', ''),
+      brand: getSafeDomain(item.sourceUrl || item.link),
       price: 0,
       category: determineCategory(item.title),
       source: 'google'
@@ -66,15 +66,14 @@ async function searchPinterest(query: string): Promise<ClothingItem[]> {
       return [];
     }
     
-    const items = await response.json();
-    if (!Array.isArray(items)) {
-      return [];
-    }
+    const data = await response.json();
+    const items = data.items || [];
     
     return items.map((item: any) => ({
-      id: item.id || `pin-${Date.now()}`,
+      id: item.id,
       name: item.title || 'Pinterest Item',
-      imageUrl: item.image?.original?.url || '/placeholder.svg',
+      imageUrl: item.image?.original?.url || item.images?.['736x']?.url || '/placeholder.svg',
+      thumbnailUrl: item.images?.['236x']?.url,
       brand: 'Pinterest',
       price: 0,
       category: determineCategory(item.title || ''),
@@ -83,6 +82,15 @@ async function searchPinterest(query: string): Promise<ClothingItem[]> {
   } catch (error) {
     console.warn('Pinterest search error:', error);
     return [];
+  }
+}
+
+function getSafeDomain(url: string): string {
+  try {
+    const domain = new URL(url).hostname.replace('www.', '');
+    return domain || 'Unknown Source';
+  } catch {
+    return 'Unknown Source';
   }
 }
 
