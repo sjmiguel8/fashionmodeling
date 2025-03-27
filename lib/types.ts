@@ -1,15 +1,13 @@
-export interface ClothingItem {
-  id: string
-  name: string
-  brand: string
-  price: number
-  category: "tops" | "bottoms" | "dresses" | "outerwear"
-  imageUrl: string
-  description?: string
-  color?: string
-  size?: string
-  modelUrl?: string // URL to 3D model for the item
-}
+export type ClothingItem = {
+  id: string;
+  name: string;
+  imageUrl: string;
+  thumbnailUrl?: string; // Add thumbnail support
+  brand: string;
+  price: number;
+  category: 'tops' | 'bottoms' | 'dresses' | 'outerwear';
+  source: 'google' | 'pinterest';
+};
 
 export interface WebResult {
   title: string;

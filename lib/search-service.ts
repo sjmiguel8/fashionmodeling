@@ -43,10 +43,11 @@ async function searchGoogle(query: string): Promise<ClothingItem[]> {
     }
     
     return items.map((item: any) => ({
-      id: item.link,
+      id: item.sourceUrl || item.link,
       name: item.title,
-      imageUrl: item.pagemap?.cse_image?.[0]?.src || '/placeholder.svg',
-      brand: item.displayLink,
+      imageUrl: item.imageUrl || item.link, // Use the direct image URL
+      thumbnailUrl: item.thumbnailUrl,
+      brand: new URL(item.sourceUrl || item.link).hostname.replace('www.', ''),
       price: 0,
       category: determineCategory(item.title),
       source: 'google'
