@@ -1,84 +1,77 @@
+import { auth, db, testConnection } from './firebase-config';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { collection, doc, getDoc, setDoc, deleteDoc, getDocs, query, where } from 'firebase/firestore';
 import type { ClothingItem } from "./types"
 
-// This is a mock Firebase service that would be replaced with real Firebase in production
-const mockDatabase: Record<string, Record<string, ClothingItem>> = {
-  "demo-user": {
-    "top-1": {
-      id: "top-1",
-      name: "Classic White T-Shirt",
-      brand: "Essentials",
-      price: 19.99,
-      category: "tops",
-      imageUrl: "/placeholder.svg?height=400&width=300&text=T-Shirt",
-      color: "white",
-      size: "M",
-    },
-    "bottom-1": {
-      id: "bottom-1",
-      name: "Slim Fit Jeans",
-      brand: "Denim Co",
-      price: 59.99,
-      category: "bottoms",
-      imageUrl: "/placeholder.svg?height=400&width=300&text=Jeans",
-      color: "blue",
-      size: "32",
-    },
-    "outerwear-1": {
-      id: "outerwear-1",
-      name: "Denim Jacket",
-      brand: "Denim Co",
-      price: 89.99,
-      category: "outerwear",
-      imageUrl: "/placeholder.svg?height=400&width=300&text=Jacket",
-      color: "blue",
-      size: "M",
-    },
-  },
+// Add this to any page component to test Firebase
+import { testConnection } from '../lib/firebase-config';
+
+// In your component:
+useEffect(() => {
+  testConnection().then(connected => {
+    console.log('Firebase connection status:', connected);
+  });
+}, []);
+
+let isInitialized = false;
+
+async function ensureInitialized() {
+  if (!isInitialized) {
+    const connected = await testConnection();
+    if (!connected) {
+      throw new Error('Firebase is not properly initialized');
+    }
+    isInitialized = true;
+  }
+}
+
+export async function registerUser(email: string, password: string) {
+  await ensureInitialized();
+  try {
+    return await createUserWithEmailAndPassword(auth, email, password);
+  } catch (error: any) {
+    console.error('Registration error:', error);
+    throw new Error(error.message || 'Failed to register');
+  }
+}
+
+export async function loginUser(email: string, password: string) {
+  await ensureInitialized();
+  try {
+    return await signInWithEmailAndPassword(auth, email, password);
+  } catch (error: any) {
+    console.error('Login error:', error);
+    throw new Error(error.message || 'Failed to login');
+  }
+}
+
+export async function logoutUser() {
+  return signOut(auth);
 }
 
 export async function getSavedItems(userId: string): Promise<ClothingItem[]> {
-  // Simulate API call delay
-  await new Promise((resolve) => setTimeout(resolve, 800))
-
-  // Return mock data
-  return Object.values(mockDatabase[userId] || {})
+  const itemsRef = collection(db, `users/${userId}/items`);
+  const snapshot = await getDocs(itemsRef);
+  return snapshot.docs.map(doc => doc.data() as ClothingItem);
 }
 
 export async function saveClothingItem(userId: string, itemId: string, item: ClothingItem): Promise<void> {
-  // Simulate API call delay
-  await new Promise((resolve) => setTimeout(resolve, 500))
-
-  // Save to mock database
-  if (!mockDatabase[userId]) {
-    mockDatabase[userId] = {}
-  }
-
-  mockDatabase[userId][itemId] = item
+  const itemRef = doc(db, `users/${userId}/items`, itemId);
+  await setDoc(itemRef, item);
 }
 
 export async function removeClothingItem(userId: string, itemId: string): Promise<void> {
-  // Simulate API call delay
-  await new Promise((resolve) => setTimeout(resolve, 500))
-
-  // Remove from mock database
-  if (mockDatabase[userId] && mockDatabase[userId][itemId]) {
-    delete mockDatabase[userId][itemId]
-  }
+  const itemRef = doc(db, `users/${userId}/items`, itemId);
+  await deleteDoc(itemRef);
 }
 
 export async function getClothingItem(itemId: string): Promise<ClothingItem | null> {
-  // Simulate API call delay
-  await new Promise((resolve) => setTimeout(resolve, 500))
-
-  for (const userId in mockDatabase) {
-    if (mockDatabase.hasOwnProperty(userId)) {
-      const userItems = mockDatabase[userId]
-      if (userItems.hasOwnProperty(itemId)) {
-        return userItems[itemId]
-      }
-    }
-  }
-
-  return null
+  // Query across all users' items to find the specific item
+  const itemsRef = collection(db, 'items');
+  const q = query(itemsRef, where('id', '==', itemId));
+  const snapshot = await getDocs(q);
+  
+  if (snapshot.empty) return null;
+  return snapshot.docs[0].data() as ClothingItem;
 }
 
