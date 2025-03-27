@@ -14,18 +14,26 @@ export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
+    setIsLoading(true)
     
     try {
+      if (!email || !password) {
+        throw new Error('Please fill in all fields');
+      }
+      
       const userCredential = await loginUser(email, password)
       console.log("Login successful!", userCredential.user)
       router.push("/") // Redirect to home page after successful login
     } catch (error) {
       console.error("Login failed:", error)
       setError(error instanceof Error ? error.message : 'Failed to login')
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -65,8 +73,8 @@ export default function LoginPage() {
                 required
               />
             </div>
-            <Button type="submit" className="w-full">
-              Login
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? "Logging in..." : "Login"}
             </Button>
           </form>
         </CardContent>
