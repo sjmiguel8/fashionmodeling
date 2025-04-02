@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Slider } from "@/components/ui/slider"
 import { MannequinViewer } from "@/components/mannequin-viewer"
 import { SavedItemsList } from "@/components/saved-items-list"
-import { getSavedItems, getClothingItem } from "@/lib/firebase-service"
+import { getSavedItems, getClothingItem, createSafeDocumentId } from "@/lib/firebase-service"
 import type { ClothingItem } from "@/lib/types"
 
 export default function MannequinPage() {
@@ -108,7 +108,11 @@ export default function MannequinPage() {
         <div className="lg:col-span-2">
           <Card className="overflow-hidden">
             <div className="aspect-[4/5] w-full bg-muted/30 relative">
-              <MannequinViewer bodyShape={bodyShape} selectedItems={selectedItems} />
+              <MannequinViewer 
+                bodyShape={bodyShape} 
+                selectedItems={selectedItems}
+                savedItems={savedItems} // Pass savedItems to MannequinViewer
+              />
             </div>
           </Card>
         </div>

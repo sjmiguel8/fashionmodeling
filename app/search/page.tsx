@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { saveClothingItem, removeClothingItem, getSavedItems, createSafeDocumentId } from "@/lib/firebase-service"
-import { searchClothingItems } from "@/lib/search-service"
 import type { ClothingItem } from "@/lib/types"
 import { useAuth } from "@/contexts/auth-context"
 import { toast } from "@/components/ui/use-toast"
@@ -40,7 +39,11 @@ export default function SearchPage() {
 
     setIsLoading(true)
     try {
-      const results = await searchClothingItems(query)
+      const response = await fetch(`/api/clothing-search?query=${encodeURIComponent(query)}`)
+      if (!response.ok) {
+        throw new Error(`Search API failed: ${response.status}`)
+      }
+      const results = await response.json()
       setSearchResults(results)
     } catch (error) {
       console.error("Error searching clothes:", error)

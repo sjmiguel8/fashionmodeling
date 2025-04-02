@@ -20,9 +20,10 @@ interface MannequinViewerProps {
     dress: ClothingItem | null
     outerwear: ClothingItem | null
   }
+  savedItems: ClothingItem[] // Add savedItems prop
 }
 
-export function MannequinViewer({ bodyShape, selectedItems }: MannequinViewerProps) {
+export function MannequinViewer({ bodyShape, selectedItems, savedItems }: MannequinViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null)
   const sceneRef = useRef<THREE.Scene | null>(null)
@@ -179,6 +180,8 @@ export function MannequinViewer({ bodyShape, selectedItems }: MannequinViewerPro
     const scaleX = 0.9 + (bodyShape.shoulders / 100) * 0.2
     const scaleY = 0.9 + (bodyShape.height / 100) * 0.2
     const scaleZ = 0.9 + (bodyShape.chest / 100) * 0.2
+    const scaleWaist = 0.9 + (bodyShape.waist / 100) * 0.2
+    const scaleHips = 0.9 + (bodyShape.hips / 100) * 0.2
 
     // Smooth transition
     const duration = 500 // milliseconds

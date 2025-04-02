@@ -19,11 +19,24 @@ console.log('Firebase Config:', {
   environment: process.env.NODE_ENV
 });
 
+// Validate config before initialization
+Object.entries(firebaseConfig).forEach(([key, value]) => {
+  if (!value) {
+    console.warn(`Firebase config missing ${key}`); // Use console.warn instead of throwing error
+  }
+});
+
 let app;
-if (!getApps().length) {
-  app = initializeApp(firebaseConfig);
-} else {
-  app = getApps()[0];
+try {
+  if (!getApps().length) {
+    app = initializeApp(firebaseConfig);
+    console.log('Firebase initialized successfully');
+  } else {
+    app = getApps()[0];
+    console.log('Firebase app already initialized');
+  }
+} catch (error) {
+  console.error('Firebase initialization error:', error);
 }
 
 export const auth = getAuth(app);

@@ -9,18 +9,14 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Query parameter is required' }, { status: 400 })
     }
 
-    const apiKey = process.env.PINTEREST_API_KEY
-    if (!apiKey) {
-      throw new Error('Pinterest API key is not configured')
+    const accessToken = process.env.PINTEREST_ACCESS_TOKEN
+    if (!accessToken) {
+      console.error('Pinterest API key is not configured')
+      return NextResponse.json({ error: 'Pinterest API key is not configured' }, { status: 500 })
     }
 
     const response = await fetch(
-      'https://api.pinterest.com/v3/search?' + 
-      new URLSearchParams({
-        q: `${query} fashion clothing`,
-        limit: '25',
-        api_key: apiKey
-      }), {
+      `https://api.pinterest.com/v5/search/pins?query=${query}&access_token=${accessToken}`, {
         headers: {
           'Accept': 'application/json'
         }
@@ -28,14 +24,15 @@ export async function GET(request: Request) {
     )
 
     if (!response.ok) {
-      console.error('Pinterest API error:', await response.text())
-      throw new Error(`Pinterest API returned ${response.status}`)
+      const errorText = await response.text()
+      console.error('Pinterest API error:', response.status, errorText)
+      return NextResponse.json({ error: `Pinterest API returned ${response.status}: ${errorText}` }, { status: response.status })
     }
 
     const data = await response.json()
     return NextResponse.json(data.items || [])
-  } catch (error) {
+  } catch (error: any) {
     console.error('Pinterest API error:', error)
-    return NextResponse.json({ error: 'Failed to fetch Pinterest results' }, { status: 500 })
+    return NextResponse.json({ error: error.message || 'Failed to fetch Pinterest results' }, { status: 500 })
   }
 }
