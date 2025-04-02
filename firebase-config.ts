@@ -1,5 +1,5 @@
 import { getApps, initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, signInAnonymously } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -28,17 +28,17 @@ Object.entries(firebaseConfig).forEach(([key, value]) => {
   }
 });
 
-let app;
+let app = getApps()[0];
 try {
-  if (!getApps().length) {
+  if (!app) {
     app = initializeApp(firebaseConfig);
     console.log('Firebase initialized successfully');
   } else {
-    app = getApps()[0];
     console.log('Firebase app already initialized');
   }
 } catch (error) {
   console.error('Firebase initialization error:', error);
+  throw error; // Re-throw to prevent using uninitialized Firebase
 }
 
 export const auth = getAuth(app);

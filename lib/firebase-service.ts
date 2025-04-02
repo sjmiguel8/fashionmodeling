@@ -94,12 +94,21 @@ export const saveClothingItem = async (userId: string, item: ClothingItem): Prom
       return // Item already saved
     }
 
-    await setDoc(itemRef, {
-      ...item,
+    // Make sure you are only saving primitive data types
+    const itemToSave = {
       id: safeId,
+      name: item.name,
+      imageUrl: item.imageUrl,
+      thumbnailUrl: item.thumbnailUrl,
+      brand: item.brand,
+      price: item.price,
+      category: item.category,
+      source: item.source,
       savedAt: new Date().toISOString(),
       userId // Add user ID for security rules
-    })
+    };
+
+    await setDoc(itemRef, itemToSave)
   } catch (error) {
     console.error('Error saving item:', error)
     throw error

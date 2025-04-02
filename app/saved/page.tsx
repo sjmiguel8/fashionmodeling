@@ -53,6 +53,7 @@ export default function SavedItemsPage() {
           return dateB - dateA
         })
         setSavedItems(sortedItems)
+        console.log('Saved items loaded:', sortedItems); // Add this line
       } catch (error) {
         console.error("Error loading saved items:", error)
         toast({
