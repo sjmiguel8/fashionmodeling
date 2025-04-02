@@ -98,17 +98,24 @@ async function searchPinterest(query: string): Promise<ClothingItem[]> {
 
 function getSafeDomain(url: string): string {
   try {
-    const domain = new URL(url).hostname.replace('www.', '');
-    return domain || 'Unknown Source';
-  } catch {
-    return 'Unknown Source';
+    const urlObj = new URL(url);
+    return urlObj.hostname;
+  } catch (error) {
+    console.warn('Invalid URL:', url);
+    return 'Unknown';
   }
 }
 
 function determineCategory(title: string): 'tops' | 'bottoms' | 'dresses' | 'outerwear' {
-  const lowercase = title.toLowerCase();
-  if (lowercase.includes('dress')) return 'dresses';
-  if (lowercase.includes('jacket') || lowercase.includes('coat')) return 'outerwear';
-  if (lowercase.includes('pants') || lowercase.includes('shorts') || lowercase.includes('skirt')) return 'bottoms';
-  return 'tops';
+  title = title.toLowerCase();
+
+  if (title.includes('dress')) {
+    return 'dresses';
+  } else if (title.includes('skirt') || title.includes('pants') || title.includes('jeans') || title.includes('leggings') || title.includes('shorts')) {
+    return 'bottoms';
+  } else if (title.includes('jacket') || title.includes('coat') || title.includes('blazer')) {
+    return 'outerwear';
+  } else {
+    return 'tops';
+  }
 }
