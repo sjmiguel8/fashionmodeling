@@ -31,6 +31,13 @@ export async function searchClothingItems(query: string): Promise<ClothingItem[]
 
 async function searchGoogle(query: string): Promise<ClothingItem[]> {
   try {
+    console.log('Starting Google search for query:', query);
+
+    if (!process.env.GOOGLE_API_KEY || !process.env.GOOGLE_SEARCH_ENGINE_ID) {
+      console.error('Google API key or search engine ID is not configured.');
+      return [];
+    }
+
     const response = await fetch(`/api/web-search?query=${encodeURIComponent(query)}`);
     if (!response.ok) {
       console.warn('Google search failed:', response.statusText);
@@ -39,9 +46,12 @@ async function searchGoogle(query: string): Promise<ClothingItem[]> {
     
     const items = await response.json();
     if (!Array.isArray(items)) {
+      console.warn('Google search returned non-array:', items);
       return [];
     }
     
+    console.log('Google search returned', items.length, 'items');
+
     return items.map((item: any) => ({
       id: item.sourceUrl || item.link,
       name: item.title,
@@ -60,7 +70,8 @@ async function searchGoogle(query: string): Promise<ClothingItem[]> {
 
 async function searchPinterest(query: string): Promise<ClothingItem[]> {
   try {
-    const response = await fetch(`/api/pinterest-search?query=${encodeURIComponent(query)}`);
+    const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : '';
+    const response = await fetch(`${baseUrl}/api/pinterest-search?query=${encodeURIComponent(query)}`);
     if (!response.ok) {
       console.warn('Pinterest search failed:', response.statusText);
       return [];
