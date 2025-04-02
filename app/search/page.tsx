@@ -140,6 +140,7 @@ export default function SearchPage() {
             disabled={!user}
           >
             <Heart
+              isSaved={isSaved} // Pass isSaved as a prop
               className={`h-4 w-4 transition-colors ${
                 isSaved
                   ? 'text-red-500 fill-red-500'
