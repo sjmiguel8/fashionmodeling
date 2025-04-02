@@ -3,6 +3,11 @@ import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, Au
 import { collection, doc, getDoc, setDoc, deleteDoc, getDocs, query, where } from 'firebase/firestore';
 import type { ClothingItem } from "./types"
 
+export function createSafeDocumentId(url: string): string {
+  if (!url) return `item_${Date.now()}`
+  return encodeURIComponent(url).replace(/[.#$/\[\]]/g, '_');
+}
+
 function getAuthErrorMessage(error: AuthError): string {
   switch (error.code) {
     case 'auth/invalid-credential':
@@ -78,23 +83,25 @@ export const removeClothingItem = async (userId: string, itemId: string): Promis
   }
 };
 
-function createSafeDocumentId(url: string): string {
-  // Remove invalid characters and encode the URL to make it Firebase-safe
-  return encodeURIComponent(url).replace(/[.#$/\[\]]/g, '_');
-}
-
 export const saveClothingItem = async (userId: string, item: ClothingItem): Promise<void> => {
   try {
-    // Create a safe document ID from the item's URL or ID
-    const safeId = createSafeDocumentId(item.id);
-    const itemRef = doc(db, `users/${userId}/savedItems/${safeId}`);
+    const safeId = createSafeDocumentId(item.id)
+    const itemRef = doc(db, `users/${userId}/savedItems/${safeId}`)
+    
+    // First check if the item already exists
+    const existingDoc = await getDoc(itemRef)
+    if (existingDoc.exists()) {
+      return // Item already saved
+    }
+
     await setDoc(itemRef, {
       ...item,
-      id: safeId, // Save the safe ID
-      savedAt: new Date().toISOString()
-    });
+      id: safeId,
+      savedAt: new Date().toISOString(),
+      userId // Add user ID for security rules
+    })
   } catch (error) {
-    console.error('Error saving item:', error);
-    throw error;
+    console.error('Error saving item:', error)
+    throw error
   }
-};
+}

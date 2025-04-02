@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { saveClothingItem, removeClothingItem, getSavedItems } from "@/lib/firebase-service"
+import { saveClothingItem, removeClothingItem, getSavedItems, createSafeDocumentId } from "@/lib/firebase-service"
 import { searchClothingItems } from "@/lib/search-service"
 import type { ClothingItem } from "@/lib/types"
 import { useAuth } from "@/contexts/auth-context"
@@ -24,7 +24,7 @@ export default function SearchPage() {
     if (user) {
       const loadSavedItems = async () => {
         const items = await getSavedItems(user.uid)
-        setSavedItemIds(new Set(items.map(item => item.id)))
+        setSavedItemIds(new Set(items.map(item => createSafeDocumentId(item.id))))
       }
       loadSavedItems()
     } else {
@@ -60,12 +60,15 @@ export default function SearchPage() {
       return
     }
 
+    const safeId = createSafeDocumentId(item.id)
+    const isSaved = savedItemIds.has(safeId)
+
     try {
-      if (savedItemIds.has(item.id)) {
-        await removeClothingItem(user.uid, item.id)
+      if (isSaved) {
+        await removeClothingItem(user.uid, safeId)
         setSavedItemIds(prev => {
           const next = new Set(prev)
-          next.delete(item.id)
+          next.delete(safeId)
           return next
         })
         toast({
@@ -73,8 +76,11 @@ export default function SearchPage() {
           description: `${item.name} has been removed from your collection.`,
         })
       } else {
-        await saveClothingItem(user.uid, item)
-        setSavedItemIds(prev => new Set(prev).add(item.id))
+        await saveClothingItem(user.uid, {
+          ...item,
+          savedAt: new Date().toISOString()
+        })
+        setSavedItemIds(prev => new Set(prev).add(safeId))
         toast({
           title: "Item saved!",
           description: `${item.name} has been saved to your collection.`,
@@ -141,16 +147,16 @@ export default function SearchPage() {
           disabled={!user}
         >
           <Heart 
-            className={`h-4 w-4 ${
-              savedItemIds.has(item.id) 
+            className={`h-4 w-4 transition-colors ${
+              savedItemIds.has(createSafeDocumentId(item.id))
                 ? 'text-red-500 fill-red-500' 
                 : user 
-                  ? 'text-gray-600 hover:text-red-500' 
+                  ? 'text-gray-600 hover:text-red-500 hover:fill-red-500' 
                   : 'text-gray-400'
             }`} 
           />
           <span className="sr-only">
-            {savedItemIds.has(item.id) ? 'Remove from saved' : 'Save'}
+            {savedItemIds.has(createSafeDocumentId(item.id)) ? 'Remove from saved' : 'Save'}
           </span>
         </Button>
       </CardFooter>
