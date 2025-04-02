@@ -12,9 +12,9 @@
             
             // Validate item data
             ".validate": "newData.hasChildren(['id', 'name', 'imageUrl', 'brand', 'price', 'category']) &&
-                         newData.child('category').val().matches('^(tops|bottoms|dresses|outerwear)$') &&
+                         newData.child('category').val().matches(/^(tops|bottoms|dresses|outerwear)$/) &&
                          newData.child('price').isNumber() &&
-                         newData.child('savedAt').val().matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}.*')"
+                         newData.child('savedAt').val().matches(/^\\d{4}-\\d{2}-\\d{2}.*$/)"
           }
         },
         
