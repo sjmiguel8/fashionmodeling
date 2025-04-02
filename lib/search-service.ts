@@ -7,9 +7,8 @@ export async function searchClothingItems(query: string): Promise<ClothingItem[]
 
   try {
     // Use Promise.allSettled instead of Promise.all to handle partial failures
-    const [googleResults, pinterestResults] = await Promise.allSettled([
+    const [googleResults] = await Promise.allSettled([
       searchGoogle(query),
-      searchPinterest(query)
     ]);
 
     const results: ClothingItem[] = [];
@@ -17,9 +16,6 @@ export async function searchClothingItems(query: string): Promise<ClothingItem[]
     // Add successful results from each source
     if (googleResults.status === 'fulfilled') {
       results.push(...googleResults.value);
-    }
-    if (pinterestResults.status === 'fulfilled') {
-      results.push(...pinterestResults.value);
     }
 
     return results;
@@ -33,65 +29,56 @@ async function searchGoogle(query: string): Promise<ClothingItem[]> {
   try {
     console.log('Starting Google search for query:', query);
 
-    if (!process.env.GOOGLE_API_KEY || !process.env.GOOGLE_SEARCH_ENGINE_ID) {
+    const apiKey = process.env.GOOGLE_API_KEY;
+    const searchEngineId = process.env.GOOGLE_SEARCH_ENGINE_ID;
+
+    if (!apiKey || !searchEngineId) {
       console.error('Google API key or search engine ID is not configured.');
       return [];
     }
 
-    const response = await fetch(`/api/web-search?query=${encodeURIComponent(query)}`);
+    // Add clothing-specific terms and image search parameters
+    const searchQuery = `${query} clothing fashion`;
+    const apiUrl = `https://www.googleapis.com/customsearch/v1?` +
+      new URLSearchParams({
+        key: apiKey,
+        cx: searchEngineId,
+        q: searchQuery,
+        searchType: 'image',
+        imgSize: 'LARGE',
+        imgType: 'photo',
+        safe: 'active',
+        num: '10'
+      });
+
+    const response = await fetch(apiUrl);
+
     if (!response.ok) {
       console.warn('Google search failed:', response.statusText);
       return [];
     }
-    
-    const items = await response.json();
-    if (!Array.isArray(items)) {
-      console.warn('Google search returned non-array:', items);
+
+    const data = await response.json();
+
+    if (!data.items || !Array.isArray(data.items)) {
+      console.warn('Google search returned non-array:', data);
       return [];
     }
-    
-    console.log('Google search returned', items.length, 'items');
 
-    return items.map((item: any) => ({
-      id: item.sourceUrl || item.link,
+    console.log('Google search returned', data.items.length, 'items');
+
+    return data.items.map((item: any) => ({
+      id: item.link || item.sourceUrl,
       name: item.title,
-      imageUrl: item.imageUrl || item.thumbnailUrl || '/placeholder.svg', // Fallback to thumbnail if main image fails
-      thumbnailUrl: item.thumbnailUrl,
-      brand: getSafeDomain(item.sourceUrl || item.link),
+      imageUrl: item.link || item.imageUrl || item.thumbnailUrl || '/placeholder.svg', // Fallback to thumbnail if main image fails
+      thumbnailUrl: item.thumbnailLink,
+      brand: getSafeDomain(item.link || item.sourceUrl),
       price: 0,
       category: determineCategory(item.title),
       source: 'google'
     }));
   } catch (error) {
     console.warn('Google search error:', error);
-    return [];
-  }
-}
-
-async function searchPinterest(query: string): Promise<ClothingItem[]> {
-  try {
-    const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : '';
-    const response = await fetch(`${baseUrl}/api/pinterest-search?query=${encodeURIComponent(query)}`);
-    if (!response.ok) {
-      console.warn('Pinterest search failed:', response.statusText);
-      return [];
-    }
-    
-    const data = await response.json();
-    const items = data.items || [];
-    
-    return items.map((item: any) => ({
-      id: item.id,
-      name: item.title || 'Pinterest Item',
-      imageUrl: item.image?.original?.url || item.images?.['736x']?.url || '/placeholder.svg',
-      thumbnailUrl: item.images?.['236x']?.url,
-      brand: 'Pinterest',
-      price: 0,
-      category: determineCategory(item.title || ''),
-      source: 'pinterest'
-    }));
-  } catch (error) {
-    console.warn('Pinterest search error:', error);
     return [];
   }
 }
