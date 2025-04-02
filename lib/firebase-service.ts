@@ -85,32 +85,43 @@ export const removeClothingItem = async (userId: string, itemId: string): Promis
 
 export const saveClothingItem = async (userId: string, item: ClothingItem): Promise<void> => {
   try {
-    const safeId = createSafeDocumentId(item.id)
-    const itemRef = doc(db, `users/${userId}/savedItems/${safeId}`)
-    
-    // First check if the item already exists
-    const existingDoc = await getDoc(itemRef)
-    if (existingDoc.exists()) {
-      return // Item already saved
+    if (!userId) {
+      throw new Error('User ID is required');
     }
 
-    // Make sure you are only saving primitive data types
-    const itemToSave = {
+    // Create a safer ID from the URL
+    const safeId = createSafeDocumentId(item.id);
+    const itemRef = doc(db, `users/${userId}/savedItems/${safeId}`);
+    
+    // Clean and validate the data
+    const cleanItem = {
       id: safeId,
-      name: item.name,
-      imageUrl: item.imageUrl,
-      thumbnailUrl: item.thumbnailUrl,
-      brand: item.brand,
-      price: item.price,
-      category: item.category,
-      source: item.source,
+      name: item.name?.trim() || 'Untitled Item',
+      imageUrl: item.imageUrl || '',
+      thumbnailUrl: item.thumbnailUrl || item.imageUrl || '',
+      brand: item.brand?.trim() || 'Unknown',
+      price: Number(item.price) || 0,
+      category: item.category || 'tops',
+      source: item.source || 'google',
       savedAt: new Date().toISOString(),
-      userId // Add user ID for security rules
+      userId // Add user reference
     };
 
-    await setDoc(itemRef, itemToSave)
+    // Validate required fields
+    if (!cleanItem.imageUrl) {
+      throw new Error('Image URL is required');
+    }
+
+    // Check if already exists
+    const existingDoc = await getDoc(itemRef);
+    if (!existingDoc.exists()) {
+      await setDoc(itemRef, cleanItem);
+      console.log('Item saved successfully:', cleanItem);
+    } else {
+      console.log('Item already exists:', cleanItem);
+    }
   } catch (error) {
-    console.error('Error saving item:', error)
-    throw error
+    console.error('Error saving item:', error);
+    throw error;
   }
-}
+};

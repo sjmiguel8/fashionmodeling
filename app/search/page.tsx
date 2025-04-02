@@ -11,6 +11,7 @@ import { saveClothingItem, removeClothingItem, getSavedItems, createSafeDocument
 import type { ClothingItem } from "@/lib/types"
 import { useAuth } from "@/contexts/auth-context"
 import { toast } from "@/components/ui/use-toast"
+import styles from './search.module.css';
 
 export default function SearchPage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -140,12 +141,11 @@ export default function SearchPage() {
             disabled={!user}
           >
             <Heart
-              isSaved={isSaved} // Pass isSaved as a prop
               className={`h-4 w-4 transition-colors ${
                 isSaved
-                  ? 'text-red-500 fill-red-500'
+                  ? 'fill-red-500 text-red-500'
                   : user
-                    ? 'text-gray-600 hover:text-red-500 hover:fill-red-500'
+                    ? 'fill-transparent hover:fill-red-500 hover:text-red-500'
                     : 'text-gray-400'
               }`}
             />

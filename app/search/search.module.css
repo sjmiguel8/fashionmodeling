@@ -1,0 +1,11 @@
+.heartButton {
+  color: gray; /* Default color */
+}
+
+.heartButton.saved {
+  color: red; /* Color when saved */
+}
+
+.heartButton:hover {
+  color: red; /* Hover color */
+}

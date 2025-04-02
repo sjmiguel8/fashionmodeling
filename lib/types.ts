@@ -6,7 +6,7 @@ export type ClothingItem = {
   brand: string;
   price: number;
   category: 'tops' | 'bottoms' | 'dresses' | 'outerwear';
-  source: 'google' | 'pinterest';
+  source?: 'google' | 'pinterest';
   savedAt?: string;
 };
 

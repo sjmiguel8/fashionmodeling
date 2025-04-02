@@ -1,45 +1,43 @@
 import { getApps, initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getAuth, connectAuthEmulator } from 'firebase/auth';
+import { getFirestore, connectFirestoreEmulator, enableIndexedDbPersistence } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
-// Debug environment variables
-console.log('Firebase Config:', {
-  hasApiKey: !!firebaseConfig.apiKey,
-  hasAuthDomain: !!firebaseConfig.authDomain,
-  hasProjectId: !!firebaseConfig.projectId,
-  environment: process.env.NODE_ENV
-});
+function initializeFirebase() {
+  try {
+    if (!getApps().length) {
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      const db = getFirestore(app);
 
-// Validate config before initialization
-Object.entries(firebaseConfig).forEach(([key, value]) => {
-  if (!value) {
-    console.warn(`Firebase config missing ${key}`); // Use console.warn instead of throwing error
-  }
-});
+      // Enable offline persistence
+      if (typeof window !== 'undefined') {
+        enableIndexedDbPersistence(db)
+          .catch((err) => {
+            console.error('Firestore persistence error:', err);
+          });
+      }
 
-let app;
-try {
-  if (!getApps().length) {
-    app = initializeApp(firebaseConfig);
-    console.log('Firebase initialized successfully');
-  } else {
-    app = getApps()[0];
-    console.log('Firebase app already initialized');
+      console.log('Firebase initialized successfully');
+      return { auth, db };
+    }
+    return {
+      auth: getAuth(),
+      db: getFirestore()
+    };
+  } catch (error) {
+    console.error('Firebase initialization error:', error);
+    throw error;
   }
-} catch (error) {
-  console.error('Firebase initialization error:', error);
 }
 
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+const { auth, db } = initializeFirebase();
+export { auth, db };
