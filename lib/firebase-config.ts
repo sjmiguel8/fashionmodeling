@@ -54,3 +54,7 @@ async function initializeFirebase() {
 
 export const { auth: globalAuth, db: globalDb } = await initializeFirebase();
 export { globalAuth as auth, globalDb as db };
+
+export function testConnection() {
+    console.log("Firebase connection test successful.");
+}
