@@ -1,15 +1,20 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
+import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/auth-context";
+import { 
+  saveClothingItem, 
+  removeClothingItem, 
+  getSavedItems, 
+  createSafeDocumentId 
+} from "@/lib/firebase-service";
+import type { ClothingItem } from "@/lib/types";
 import Link from "next/link"
 import { Heart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { saveClothingItem, removeClothingItem, getSavedItems, createSafeDocumentId } from "@/lib/firebase-service"
-import type { ClothingItem } from "@/lib/types"
-import { useAuth } from "@/contexts/auth-context"
 import { toast } from "@/components/ui/use-toast"
 import styles from './search.module.css';
 

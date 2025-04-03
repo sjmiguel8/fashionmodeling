@@ -1,4 +1,4 @@
-import { auth, db } from './firebase-config';
+import { auth, db } from '@/lib/firebase-config';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, AuthError } from 'firebase/auth';
 import { collection, doc, getDoc, setDoc, deleteDoc, getDocs, query, where } from 'firebase/firestore';
 import type { ClothingItem } from "./types"
@@ -15,7 +15,7 @@ function getAuthErrorMessage(error: AuthError): string {
     case 'auth/user-not-found':
       return 'No account found with this email';
     case 'auth/wrong-password':
-      return 'Incorrect password';
+      return 'Invalid email or password';
     case 'auth/invalid-email':
       return 'Invalid email address';
     case 'auth/user-disabled':
@@ -64,7 +64,7 @@ export const getSavedItems = async (userId: string): Promise<ClothingItem[]> => 
     }
 
     console.log('Attempting to fetch items for user:', userId);
-    const savedItemsRef = collection(db, 'users', userId, 'savedItems');
+    const savedItemsRef = collection(db, 'users', userId, 'saved');
 
     try {
       const snapshot = await getDocs(savedItemsRef);
@@ -103,8 +103,16 @@ export const getClothingItem = async (itemId: string): Promise<ClothingItem | nu
 
 export const removeClothingItem = async (userId: string, itemId: string): Promise<void> => {
   try {
-    const itemRef = doc(db, `users/${userId}/savedItems/${itemId}`);
+    // Use the correct collection path
+    const itemRef = doc(db, 'users', userId, 'saved', itemId);
     await deleteDoc(itemRef);
+    
+    // Update cache
+    const userCache = itemCache.get(userId);
+    if (userCache) {
+      userCache.delete(itemId);
+    }
+    console.log('Item removed successfully:', itemId);
   } catch (error) {
     console.error('Error removing item:', error);
     throw error;
@@ -133,13 +141,37 @@ function categorizeClothing(item: Partial<ClothingItem>): ClothingItem['category
   return 'other';
 }
 
-export const saveClothingItem = async (userId: string, item: ClothingItem): Promise<void> => {
+// Add cache for saved items
+const itemCache = new Map<string, Set<string>>();
+
+export const getUserSavedItemIds = async (userId: string): Promise<Set<string>> => {
+  // Check cache first
+  if (itemCache.has(userId)) {
+    return itemCache.get(userId) || new Set();
+  }
+
+  try {
+    // Get saved items using the correct collection path
+    const savedRef = collection(db, 'users', userId, 'saved');
+    const snapshot = await getDocs(savedRef);
+    const ids = new Set(snapshot.docs.map(doc => doc.id));
+    
+    // Update cache
+    itemCache.set(userId, ids);
+    console.log(`Retrieved ${ids.size} saved item IDs for user ${userId}`);
+    return ids;
+  } catch (error) {
+    console.error('Error getting saved item IDs:', error);
+    return new Set();
+  }
+};
+
+export const saveClothingItem = async (userId: string, item: ClothingItem): Promise<ClothingItem> => {
   try {
     if (!userId) throw new Error('User ID is required');
-    console.log('Attempting to save item for user:', userId);
-
+    
     const safeId = createSafeDocumentId(item.id);
-    const itemRef = doc(db, 'users', userId, 'savedItems', safeId);
+    const itemRef = doc(db, 'users', userId, 'saved', safeId);
     
     const cleanItem = {
       id: safeId,
@@ -154,10 +186,15 @@ export const saveClothingItem = async (userId: string, item: ClothingItem): Prom
       userId
     };
 
-    console.log('Saving item:', cleanItem);
     await setDoc(itemRef, cleanItem);
-    console.log('Item saved successfully');
+    console.log('Item saved successfully:', safeId);
+
+    // Update cache
+    const userCache = itemCache.get(userId) || new Set();
+    userCache.add(safeId);
+    itemCache.set(userId, userCache);
     
+    return cleanItem;
   } catch (error) {
     console.error('Error saving item:', error);
     throw error;
