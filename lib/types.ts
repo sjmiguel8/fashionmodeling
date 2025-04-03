@@ -5,7 +5,7 @@ export type ClothingItem = {
   thumbnailUrl?: string; // Add thumbnail support
   brand: string;
   price: number;
-  category: 'tops' | 'bottoms' | 'dresses' | 'outerwear';
+  category: 'tops' | 'bottoms' | 'dresses' | 'outerwear' | 'hats' | 'other';
   source?: 'google' | 'pinterest';
   savedAt?: string;
 };

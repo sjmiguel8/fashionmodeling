@@ -1,27 +1,13 @@
-{
-  "rules": {
-    "users": {
-      "$userId": {
-        ".read": "auth != null && auth.uid == $userId",
-        ".write": "auth != null && auth.uid == $userId",
-        
-        "savedItems": {
-          "$itemId": {
-            ".read": "auth != null",
-            ".write": "auth != null && auth.uid == $userId",
-            
-            // Validate item data
-            ".validate": "newData.hasChildren(['id', 'name', 'imageUrl', 'brand', 'price', 'category']) &&
-                         newData.child('category').val().matches(/^(tops|bottoms|dresses|outerwear)$/) &&
-                         newData.child('price').isNumber() &&
-                         newData.child('savedAt').val().matches(/^\\d{4}-\\d{2}-\\d{2}.*$/)"
-          }
-        },
-        
-        "settings": {
-          ".read": "auth != null && auth.uid == $userId",
-          ".write": "auth != null && auth.uid == $userId"
-        }
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId} {
+      match /savedItems/{itemId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null && request.auth.uid == userId;
+        allow update: if request.auth != null && request.auth.uid == userId;
+        allow delete: if request.auth != null && request.auth.uid == userId;
       }
     }
   }

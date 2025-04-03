@@ -58,11 +58,39 @@ export async function logoutUser() {
 
 export const getSavedItems = async (userId: string): Promise<ClothingItem[]> => {
   try {
-    const savedItemsRef = collection(db, `users/${userId}/savedItems`);
-    const snapshot = await getDocs(savedItemsRef);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ClothingItem));
+    if (!userId) {
+      console.warn('No user ID provided for getSavedItems');
+      return [];
+    }
+
+    console.log('Attempting to fetch items for user:', userId);
+    const savedItemsRef = collection(db, 'users', userId, 'savedItems');
+
+    try {
+      const snapshot = await getDocs(savedItemsRef);
+      const items = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          name: data.name || '',
+          imageUrl: data.imageUrl || '',
+          thumbnailUrl: data.thumbnailUrl || data.imageUrl || '',
+          brand: data.brand || '',
+          price: Number(data.price) || 0,
+          category: data.category || 'other',
+          source: data.source || 'google',
+          savedAt: data.savedAt || new Date().toISOString()
+        } as ClothingItem;
+      });
+
+      console.log(`Successfully retrieved ${items.length} items`);
+      return items;
+    } catch (error) {
+      console.error('Error fetching documents:', error);
+      throw error;
+    }
   } catch (error) {
-    console.error('Error getting saved items:', error);
+    console.error('Error in getSavedItems:', error);
     return [];
   }
 };
@@ -83,43 +111,53 @@ export const removeClothingItem = async (userId: string, itemId: string): Promis
   }
 };
 
+function categorizeClothing(item: Partial<ClothingItem>): ClothingItem['category'] {
+  const titleLower = item.name?.toLowerCase() || '';
+  
+  // Keywords for each category
+  const categories = {
+    hats: ['hat', 'cap', 'beanie', 'fedora', 'beret', 'headwear', 'bonnet'],
+    tops: ['shirt', 'blouse', 't-shirt', 'top', 'sweater', 'tank'],
+    bottoms: ['pants', 'jeans', 'shorts', 'skirt', 'trousers', 'leggings'],
+    dresses: ['dress', 'gown', 'frock'],
+    outerwear: ['jacket', 'coat', 'hoodie', 'blazer', 'cardigan']
+  };
+
+  // Check each category
+  for (const [category, keywords] of Object.entries(categories)) {
+    if (keywords.some(keyword => titleLower.includes(keyword))) {
+      return category as ClothingItem['category'];
+    }
+  }
+
+  return 'other';
+}
+
 export const saveClothingItem = async (userId: string, item: ClothingItem): Promise<void> => {
   try {
-    if (!userId) {
-      throw new Error('User ID is required');
-    }
+    if (!userId) throw new Error('User ID is required');
+    console.log('Attempting to save item for user:', userId);
 
-    // Create a safer ID from the URL
     const safeId = createSafeDocumentId(item.id);
-    const itemRef = doc(db, `users/${userId}/savedItems/${safeId}`);
+    const itemRef = doc(db, 'users', userId, 'savedItems', safeId);
     
-    // Clean and validate the data
     const cleanItem = {
       id: safeId,
       name: item.name?.trim() || 'Untitled Item',
-      imageUrl: item.imageUrl || '',
-      thumbnailUrl: item.thumbnailUrl || item.imageUrl || '',
+      imageUrl: item.imageUrl,
+      thumbnailUrl: item.thumbnailUrl || item.imageUrl,
       brand: item.brand?.trim() || 'Unknown',
       price: Number(item.price) || 0,
-      category: item.category || 'tops',
+      category: categorizeClothing(item),
       source: item.source || 'google',
       savedAt: new Date().toISOString(),
-      userId // Add user reference
+      userId
     };
 
-    // Validate required fields
-    if (!cleanItem.imageUrl) {
-      throw new Error('Image URL is required');
-    }
-
-    // Check if already exists
-    const existingDoc = await getDoc(itemRef);
-    if (!existingDoc.exists()) {
-      await setDoc(itemRef, cleanItem);
-      console.log('Item saved successfully:', cleanItem);
-    } else {
-      console.log('Item already exists:', cleanItem);
-    }
+    console.log('Saving item:', cleanItem);
+    await setDoc(itemRef, cleanItem);
+    console.log('Item saved successfully');
+    
   } catch (error) {
     console.error('Error saving item:', error);
     throw error;

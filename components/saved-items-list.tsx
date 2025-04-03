@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import type { ClothingItem } from "@/lib/types"
+import { useEffect, useState } from "react";
 
 interface SavedItemsListProps {
   items: ClothingItem[]
@@ -10,6 +11,19 @@ interface SavedItemsListProps {
 }
 
 export function SavedItemsList({ items, onSelectItem, isLoading }: SavedItemsListProps) {
+  const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    // Preload images to prevent WebGL texture issues
+    items.forEach(item => {
+      const img = new Image();
+      img.onload = () => {
+        setLoadedImages(prev => new Set(prev).add(item.imageUrl));
+      };
+      img.src = item.imageUrl;
+    });
+  }, [items]);
+
   if (isLoading) {
     return (
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -33,7 +47,16 @@ export function SavedItemsList({ items, onSelectItem, isLoading }: SavedItemsLis
       {items.map((item) => (
         <div key={item.id} className="group cursor-pointer" onClick={() => onSelectItem(item)}>
           <div className="aspect-[3/4] rounded-md overflow-hidden relative">
-            <img src={item.imageUrl || "/placeholder.svg"} alt={item.name} className="w-full h-full object-cover" />
+            {loadedImages.has(item.imageUrl) ? (
+              <img 
+                src={item.imageUrl} 
+                alt={item.name} 
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
+            ) : (
+              <div className="w-full h-full bg-muted animate-pulse" />
+            )}
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
               <Button size="sm" variant="secondary">
                 Try On

@@ -1,6 +1,6 @@
 import { getApps, initializeApp } from 'firebase/app';
-import { getAuth, connectAuthEmulator } from 'firebase/auth';
-import { getFirestore, connectFirestoreEmulator, enableIndexedDbPersistence } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
+import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -11,33 +11,46 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
-function initializeFirebase() {
-  try {
-    if (!getApps().length) {
-      const app = initializeApp(firebaseConfig);
-      const auth = getAuth(app);
-      const db = getFirestore(app);
+let app;
+let db;
+let auth;
 
-      // Enable offline persistence
+async function initializeFirebase() {
+  if (!getApps().length) {
+    try {
+      app = initializeApp(firebaseConfig);
+      db = getFirestore(app);
+      auth = getAuth(app);
+
+      // Enable persistence before any other Firestore operations
       if (typeof window !== 'undefined') {
-        enableIndexedDbPersistence(db)
-          .catch((err) => {
-            console.error('Firestore persistence error:', err);
-          });
+        try {
+          await enableIndexedDbPersistence(db);
+          console.log('Firestore persistence enabled');
+        } catch (err: any) {
+          if (err.code === 'failed-precondition') {
+            console.warn('Multiple tabs open, persistence enabled in first tab only');
+          } else if (err.code === 'unimplemented') {
+            console.warn('Browser doesn\'t support persistence');
+          } else {
+            console.error('Persistence error:', err);
+          }
+        }
       }
 
       console.log('Firebase initialized successfully');
-      return { auth, db };
+    } catch (error) {
+      console.error('Firebase initialization error:', error);
+      throw error;
     }
-    return {
-      auth: getAuth(),
-      db: getFirestore()
-    };
-  } catch (error) {
-    console.error('Firebase initialization error:', error);
-    throw error;
+  } else {
+    app = getApps()[0];
+    db = getFirestore(app);
+    auth = getAuth(app);
   }
+
+  return { auth, db };
 }
 
-const { auth, db } = initializeFirebase();
-export { auth, db };
+export const { auth: globalAuth, db: globalDb } = await initializeFirebase();
+export { globalAuth as auth, globalDb as db };
