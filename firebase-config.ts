@@ -2,6 +2,17 @@ import { getApps, initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
+export async function getFirebaseInstance() {
+    const app = initializeApp({
+        // Add your Firebase config here
+    });
+    
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    
+    return { auth, db };
+}
+
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -55,3 +66,4 @@ export async function testConnection() {
     return false;
   }
 }
+

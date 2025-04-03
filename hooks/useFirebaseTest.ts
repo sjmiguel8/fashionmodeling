@@ -1,15 +1,11 @@
 import { useEffect, useState } from 'react';
-import { testConnection } from '../lib/firebase-config';
+import { getFirebaseInstance } from '../lib/firebase-config';
 
 export function useFirebaseTest() {
-  const [isConnected, setIsConnected] = useState(false);
+    const initFirebase = async () => {
+        const { auth, db } = await getFirebaseInstance();
+        // Your firebase test logic here
+    };
 
-  useEffect(() => {
-    testConnection().then(connected => {
-      setIsConnected(connected);
-      console.log('Firebase connection status:', connected);
-    });
-  }, []);
-
-  return isConnected;
+    return { initFirebase };
 }

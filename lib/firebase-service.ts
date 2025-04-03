@@ -65,30 +65,25 @@ export const getSavedItems = async (userId: string): Promise<ClothingItem[]> => 
 
     console.log('Attempting to fetch items for user:', userId);
     const savedItemsRef = collection(db, 'users', userId, 'saved');
+    
+    const snapshot = await getDocs(savedItemsRef);
+    const items = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        name: data.name || '',
+        imageUrl: data.imageUrl || '',
+        thumbnailUrl: data.thumbnailUrl || data.imageUrl || '',
+        brand: data.brand || '',
+        price: Number(data.price) || 0,
+        category: data.category || 'other',
+        source: data.source || 'google',
+        savedAt: data.savedAt || new Date().toISOString()
+      } as ClothingItem;
+    });
 
-    try {
-      const snapshot = await getDocs(savedItemsRef);
-      const items = snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          name: data.name || '',
-          imageUrl: data.imageUrl || '',
-          thumbnailUrl: data.thumbnailUrl || data.imageUrl || '',
-          brand: data.brand || '',
-          price: Number(data.price) || 0,
-          category: data.category || 'other',
-          source: data.source || 'google',
-          savedAt: data.savedAt || new Date().toISOString()
-        } as ClothingItem;
-      });
-
-      console.log(`Successfully retrieved ${items.length} items`);
-      return items;
-    } catch (error) {
-      console.error('Error fetching documents:', error);
-      throw error;
-    }
+    console.log(`Successfully retrieved ${items.length} items`);
+    return items;
   } catch (error) {
     console.error('Error in getSavedItems:', error);
     return [];

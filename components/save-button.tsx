@@ -16,18 +16,38 @@ interface SaveButtonProps {
 export function SaveButton({ item, userId, onSaveChange }: SaveButtonProps) {
   const [isSaved, setIsSaved] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    if (userId) {
-      getUserSavedItemIds(userId).then(savedIds => {
-        setIsSaved(savedIds.has(createSafeDocumentId(item.id)));
-      });
+    let mounted = true;
+    
+    async function initAndCheck() {
+      if (!userId) return;
+      
+      try {
+        const savedIds = await getUserSavedItemIds(userId);
+        if (mounted) {
+          const safeId = createSafeDocumentId(item.id);
+          setIsSaved(savedIds.has(safeId));
+          setIsInitialized(true);
+        }
+      } catch (error) {
+        console.error('Error checking saved status:', error);
+      }
     }
+
+    initAndCheck();
+    
+    return () => {
+      mounted = false;
+    };
   }, [userId, item.id]);
 
   const handleClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
+    
     if (!userId) {
       toast({ title: "Please sign in to save items" });
       return;
@@ -35,15 +55,22 @@ export function SaveButton({ item, userId, onSaveChange }: SaveButtonProps) {
 
     setIsLoading(true);
     try {
+      const safeId = createSafeDocumentId(item.id);
       if (isSaved) {
-        await removeClothingItem(userId, createSafeDocumentId(item.id));
+        await removeClothingItem(userId, safeId);
+        setIsSaved(false);
       } else {
         await saveClothingItem(userId, item);
+        setIsSaved(true);
       }
-      setIsSaved(!isSaved);
       onSaveChange?.(!isSaved);
     } catch (error) {
-      toast({ title: "Error saving item" });
+      console.error('Error toggling save:', error);
+      toast({ 
+        title: "Error",
+        description: "Failed to update saved status",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
@@ -53,9 +80,9 @@ export function SaveButton({ item, userId, onSaveChange }: SaveButtonProps) {
     <Button
       size="icon"
       variant="ghost"
-      className={`${isSaved ? 'text-red-500' : 'text-gray-500'} ${isLoading ? 'opacity-50' : ''}`}
+      className={`${isSaved ? 'text-red-500' : 'text-gray-500'} ${isLoading || !isInitialized ? 'opacity-50' : ''}`}
       onClick={handleClick}
-      disabled={isLoading}
+      disabled={isLoading || !isInitialized}
     >
       <Heart className={isSaved ? "fill-current" : ""} />
     </Button>
