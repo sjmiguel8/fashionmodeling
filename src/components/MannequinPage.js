@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CLOTHING_CATEGORIES } from '../constants/clothingCategories';
 import { fitClothingToMannequin, getSelectedItemsFromUrl } from '../utils/mannequinFitUtils';
-import { getSavedItems, getClothingItem } from '../utils/firebaseHelpers';
+import { getSavedItems as getSavedItemsFromFirebase } from '../../lib/firebase-service'; // Direct import from firebase-service
 
 const MannequinPage = () => {
   const [savedItems, setSavedItems] = useState([]);
@@ -24,17 +24,34 @@ const MannequinPage = () => {
     footwear: null
   });
   const [isLoading, setIsLoading] = useState(true);
-  const [userId, setUserId] = useState('demo-user'); // This should come from your auth context
+  const [errorMessage, setErrorMessage] = useState('');
+  
+  // Use a hard-coded user ID for now (should come from auth context in real app)
+  const userId = 'demo-user'; 
 
   // Load saved items and check URL parameters
   useEffect(() => {
     const loadSavedItemsAndCheckParams = async () => {
       setIsLoading(true);
+      setErrorMessage('');
+      
       try {
-        // Get all saved items from your actual firebase service
-        const items = await getSavedItems(userId);
+        console.log('Attempting to fetch saved items for user:', userId);
+        
+        // Get saved items directly from Firebase service
+        const items = await getSavedItemsFromFirebase(userId);
+        
+        if (!items) {
+          console.error('Received null or undefined items from firebase');
+          setErrorMessage('Failed to load saved items.');
+          setSavedItems([]);
+          return;
+        }
+        
+        console.log(`Retrieved ${items.length} items from Firebase service`);
+        
+        // Set the items in state
         setSavedItems(items);
-        console.log(`Retrieved ${items.length} items for the mannequin page`);
         
         // Check for item IDs in URL
         const currentUrl = window.location.href;
@@ -49,11 +66,15 @@ const MannequinPage = () => {
             if (item) {
               console.log('Found item to try on:', item);
               tryOnClothing(item);
+            } else {
+              console.warn(`Item with ID ${itemId} not found in saved items`);
             }
           }
         }
       } catch (error) {
         console.error('Error loading saved items:', error);
+        setErrorMessage('Failed to load saved items. Please try again later.');
+        setSavedItems([]);
       } finally {
         setIsLoading(false);
       }
@@ -64,12 +85,20 @@ const MannequinPage = () => {
   
   // Function to try on clothing
   const tryOnClothing = (item) => {
-    if (!item || !item.category) {
-      console.error('Invalid item to try on:', item);
+    if (!item) {
+      console.error('Invalid item to try on (null or undefined)');
       return;
     }
     
+    if (!item.category) {
+      console.error('Item has no category:', item);
+      return;
+    }
+    
+    // Get the category key - could be a string or an object with id
     const categoryKey = typeof item.category === 'string' ? item.category : item.category.id;
+    
+    console.log(`Trying on item: ${item.name} in category: ${categoryKey}`);
     
     // Update the selected outfit state
     setSelectedOutfit(prevOutfit => ({
@@ -154,10 +183,10 @@ const MannequinPage = () => {
               Object.values(wornItems).map(item => (
                 <div 
                   key={item.id} 
-                  className={`clothing-item ${item.category.id || item.category}`}
+                  className={`clothing-item ${item.category}`}
                   style={item.style}
                 >
-                  <img src={item.imageUrl || item.image} alt={item.name} />
+                  <img src={item.imageUrl} alt={item.name} />
                 </div>
               ))
             )}
@@ -227,7 +256,7 @@ const MannequinPage = () => {
                   return (
                     <div key={category} className="outfit-item">
                       <div className="item-thumbnail">
-                        <img src={item.imageUrl || item.image} alt={item.name} />
+                        <img src={item.imageUrl} alt={item.name} />
                       </div>
                       <div className="item-details">
                         <p className="item-name">{item.name}</p>
@@ -276,6 +305,8 @@ const MannequinPage = () => {
         <div className="saved-items-grid">
           {isLoading ? (
             <div className="loading-message">Loading your saved items...</div>
+          ) : errorMessage ? (
+            <div className="error-message">{errorMessage}</div>
           ) : savedItems.length === 0 ? (
             <div className="no-items-message">No saved items found. Save some items first!</div>
           ) : (

@@ -1,24 +1,39 @@
 import React, { useState, useEffect } from 'react';
 import { CLOTHING_CATEGORIES } from '../constants/clothingCategories';
-import { getSavedItems } from '../utils/firebaseHelpers';
+import { getSavedItems } from '../../lib/firebase-service'; // Direct import from firebase-service
 
 const SavedItemsPage = () => {
   const [activeFilter, setActiveFilter] = useState('all');
   const [savedItems, setSavedItems] = useState([]);
   const [selectedItems, setSelectedItems] = useState(new Set());
   const [isLoading, setIsLoading] = useState(true);
-  const [userId, setUserId] = useState('demo-user'); // This should come from your auth context
+  const [errorMessage, setErrorMessage] = useState('');
+  
+  // Use a hard-coded user ID for now (should come from auth context in real app)
+  const userId = 'demo-user';
   
   useEffect(() => {
     // Load saved items when component mounts
     const loadSavedItems = async () => {
       setIsLoading(true);
+      setErrorMessage('');
       try {
+        console.log('Attempting to fetch saved items for SavedItemsPage...');
         const items = await getSavedItems(userId);
-        console.log(`Loaded ${items.length} saved items in SavedItemsPage`);
+        
+        if (!items) {
+          console.error('Received null or undefined items from firebase');
+          setErrorMessage('Failed to load saved items.');
+          setSavedItems([]);
+          return;
+        }
+        
+        console.log(`Successfully loaded ${items.length} saved items in SavedItemsPage`);
         setSavedItems(items);
       } catch (error) {
         console.error('Error loading saved items:', error);
+        setErrorMessage('Failed to load saved items. Please try again later.');
+        setSavedItems([]);
       } finally {
         setIsLoading(false);
       }
@@ -79,6 +94,8 @@ const SavedItemsPage = () => {
       <div className="saved-items-grid">
         {isLoading ? (
           <div className="loading-message">Loading your saved items...</div>
+        ) : errorMessage ? (
+          <div className="error-message">{errorMessage}</div>
         ) : savedItems.length === 0 ? (
           <div className="no-items-message">No saved items found. Save some items first!</div>
         ) : (
