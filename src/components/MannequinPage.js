@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { CLOTHING_CATEGORIES } from '../constants/clothingCategories';
 import { fitClothingToMannequin, getSelectedItemsFromUrl } from '../utils/mannequinFitUtils';
-import { getSavedItems as getSavedItemsFromFirebase } from '../../lib/firebase-service'; // Direct import from firebase-service
+// Import directly from the firebase-service instead of through the helper
+import { getSavedItems } from '../../lib/firebase-service';  
 
 const MannequinPage = () => {
   const [savedItems, setSavedItems] = useState([]);
@@ -36,47 +37,59 @@ const MannequinPage = () => {
       setErrorMessage('');
       
       try {
-        console.log('Attempting to fetch saved items for user:', userId);
+        // Direct debugging to find the issue
+        console.log('Fetching saved items from Firebase...');
         
-        // Get saved items directly from Firebase service
-        const items = await getSavedItemsFromFirebase(userId);
+        // Use a specific user ID that has saved items (from your main app)
+        // This should match the user ID used in your main app to save items
+        const actualUserId = user?.uid || 'demo-user';
+        console.log('Using user ID for fetch:', actualUserId);
         
-        if (!items) {
-          console.error('Received null or undefined items from firebase');
-          setErrorMessage('Failed to load saved items.');
+        // Store response in a variable to inspect it
+        const response = await getSavedItems(actualUserId);
+        console.log('Raw response from getSavedItems:', response);
+        
+        // Explicitly check if the response exists and is an array
+        if (!response || !Array.isArray(response)) {
+          console.error('Invalid response from getSavedItems:', response);
+          setErrorMessage('Failed to load saved items (invalid data format).');
           setSavedItems([]);
           return;
         }
         
-        console.log(`Retrieved ${items.length} items from Firebase service`);
+        // If we have items, log them and update state
+        console.log(`Retrieved ${response.length} items:`, response);
         
-        // Set the items in state
-        setSavedItems(items);
+        // Set the state with the response
+        setSavedItems(response);
         
-        // Check for item IDs in URL
+        // Check URL params after ensuring we have items
         const currentUrl = window.location.href;
         const selectedItemIds = getSelectedItemsFromUrl(currentUrl);
         
         if (selectedItemIds.length > 0) {
           console.log('Found item IDs in URL:', selectedItemIds);
-          
-          // Process each item ID
-          for (const itemId of selectedItemIds) {
-            const item = items.find(i => i.id === itemId);
+          selectedItemIds.forEach(itemId => {
+            const item = response.find(i => i.id === itemId);
             if (item) {
-              console.log('Found item to try on:', item);
+              console.log('Found matching item to try on:', item);
               tryOnClothing(item);
             } else {
               console.warn(`Item with ID ${itemId} not found in saved items`);
             }
-          }
+          });
         }
       } catch (error) {
-        console.error('Error loading saved items:', error);
-        setErrorMessage('Failed to load saved items. Please try again later.');
+        console.error('Error in loadSavedItemsAndCheckParams:', error);
+        setErrorMessage(`Failed to load saved items: ${error.message}`);
         setSavedItems([]);
       } finally {
         setIsLoading(false);
+        
+        // Add a timeout to check the state after the update should be processed
+        setTimeout(() => {
+          console.log('Checking savedItems state after update cycle:', savedItems);
+        }, 100);
       }
     };
     
@@ -166,6 +179,9 @@ const MannequinPage = () => {
     setWornItems({});
   };
   
+  // Log state before render to debug
+  console.log('Rendering with savedItems:', savedItems);
+
   return (
     <div className="mannequin-page">
       {/* Main container */}
@@ -290,6 +306,14 @@ const MannequinPage = () => {
       {/* Saved items section with category filters */}
       <div className="saved-items-section">
         <h3>My Saved Items ({savedItems.length})</h3>
+        
+        {/* Debug info */}
+        <div className="debug-info">
+          Items loaded: {savedItems.length} | 
+          Loading state: {isLoading ? 'Loading...' : 'Completed'} |
+          Error: {errorMessage || 'None'}
+        </div>
+        
         <div className="category-filters">
           {CLOTHING_CATEGORIES.map((category) => (
             <button 
@@ -298,10 +322,15 @@ const MannequinPage = () => {
               onClick={() => setActiveCategory(category.id)}
             >
               {category.name}
+              {/* Show count of items in each category */}
+              <span className="item-count">
+                {savedItems.filter(item => item.category === category.id).length}
+              </span>
             </button>
           ))}
         </div>
-        
+
+        {/* Update the saved items grid section with more explicit conditions */}
         <div className="saved-items-grid">
           {isLoading ? (
             <div className="loading-message">Loading your saved items...</div>
@@ -310,29 +339,37 @@ const MannequinPage = () => {
           ) : savedItems.length === 0 ? (
             <div className="no-items-message">No saved items found. Save some items first!</div>
           ) : (
-            /* Filter and display saved items */
-            savedItems
-              .filter(item => activeCategory === 'all' || item.category === activeCategory)
-              .map(item => {
-                const categoryId = item.category;
-                const isSelected = selectedOutfit[categoryId] && 
-                                  selectedOutfit[categoryId].id === item.id;
-                return (
-                  <div key={item.id} className={`saved-item-card ${isSelected ? 'selected' : ''}`}>
-                    <div className="item-image-container">
-                      <img src={item.imageUrl} alt={item.name} />
-                    </div>
-                    <h4>{item.name}</h4>
-                    <button 
-                      className="try-on-btn"
-                      onClick={() => tryOnClothing(item)}
-                      disabled={isSelected}
-                    >
-                      {isSelected ? 'Currently Worn' : 'Try On'}
-                    </button>
-                  </div>
-                );
-              })
+            <div>
+              <div className="saved-items-grid">
+                {savedItems
+                  .filter(item => activeCategory === 'all' || item.category === activeCategory)
+                  .map(item => {
+                    const categoryId = item.category;
+                    const isSelected = selectedOutfit[categoryId] && 
+                                      selectedOutfit[categoryId].id === item.id;
+                    
+                    console.log(`Rendering item: ${item.id} - ${item.name} (${item.category})`);
+                    
+                    return (
+                      <div key={item.id} className={`saved-item-card ${isSelected ? 'selected' : ''}`}>
+                        <div className="item-image-container">
+                          <img src={item.imageUrl} alt={item.name} />
+                        </div>
+                        <h4>{item.name}</h4>
+                        <p className="item-category">{item.category}</p>
+                        <button 
+                          className="try-on-btn"
+                          onClick={() => tryOnClothing(item)}
+                          disabled={isSelected}
+                        >
+                          {isSelected ? 'Currently Worn' : 'Try On'}
+                        </button>
+                      </div>
+                    );
+                  })
+                }
+              </div>
+            </div>
           )}
         </div>
       </div>
